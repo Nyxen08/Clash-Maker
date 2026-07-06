@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arena Deste Kurucu</title>
+<style>
+  :root{
+    --bg-void: #100a1f;
+    --bg-panel: #1b1233;
+    --bg-card: #241a42;
+    --gold: #e3b23c;
+    --gold-dim: #8a6a25;
+    --violet: #7c4dff;
+    --violet-soft: #9b7dff;
+    --ember: #ff6b4a;
+    --ink: #f2e9d8;
+    --ink-dim: #b6a9d1;
+    --common: #cfd6e0;
+    --rare: #ff8c42;
+    --epic: #c86bff;
+    --legendary: #5ee6d0;
+    --champion: #ffd447;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 20% -10%, rgba(124,77,255,0.25), transparent 45%),
+      radial-gradient(circle at 90% 10%, rgba(255,107,74,0.12), transparent 40%),
+      var(--bg-void);
+    color:var(--ink);
+    font-family: 'Trebuchet MS', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  .banner-font{
+    font-family: Georgia, 'Times New Roman', serif;
+    letter-spacing:0.04em;
+  }
+
+  header{
+    padding:28px 20px 18px;
+    text-align:center;
+    position:relative;
+    border-bottom:1px solid rgba(227,178,60,0.25);
+  }
+  header::before{
+    content:"";
+    position:absolute; left:50%; top:0; transform:translateX(-50%);
+    width:120px; height:4px;
+    background:linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  header h1{
+    font-size:clamp(1.6rem, 4vw, 2.4rem);
+    margin:0 0 6px;
+    color:var(--gold);
+    text-shadow: 0 0 18px rgba(227,178,60,0.35);
+  }
+  header p{
+    margin:0;
+    color:var(--ink-dim);
+    font-size:0.95rem;
+  }
+
+  .layout{
+    max-width:1200px;
+    margin:0 auto;
+    padding:24px 20px 0;
+    display:grid;
+    grid-template-columns: 1fr;
+    gap:24px;
+  }
+
+  /* DECK STRIP */
+  .deck-wrap{
+    background:var(--bg-panel);
+    border:1px solid rgba(227,178,60,0.3);
+    border-radius:16px;
+    padding:18px;
+    position:sticky;
+    top:12px;
+    z-index:10;
+    box-shadow:0 12px 30px rgba(0,0,0,0.4);
+  }
+  .deck-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .deck-top h2{
+    margin:0;
+    font-size:1.05rem;
+    color:var(--violet-soft);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+  }
+  .elixir-avg{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:rgba(124,77,255,0.15);
+    border:1px solid var(--violet);
+    padding:6px 14px;
+    border-radius:999px;
+    font-weight:bold;
+    color:var(--violet-soft);
+  }
+  .elixir-avg .drop{
+    width:16px;height:18px;
+    background:var(--violet);
+    clip-path: polygon(50% 0%, 90% 40%, 75% 100%, 25% 100%, 10% 40%);
+  }
+  .deck-slots{
+    display:grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap:10px;
+  }
+  .slot{
+    aspect-ratio: 3/4;
+    background:var(--bg-card);
+    border:2px dashed rgba(182,169,209,0.3);
+    border-radius:10px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    cursor:pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+    text-align:center;
+    padding:4px;
+  }
+  .slot:hover{ transform: translateY(-3px); }
+  .slot.filled{
+    border-style:solid;
+  }
+  .slot .slot-icon{ font-size:1.6rem; line-height:1; }
+  .slot .slot-name{ font-size:0.62rem; margin-top:4px; color:var(--ink-dim); }
+  .slot .slot-cost{
+    position:absolute; top:-6px; left:-6px;
+    width:20px;height:22px;
+    background:var(--violet);
+    clip-path: polygon(50% 0%, 90% 40%, 75% 100%, 25% 100%, 10% 40%);
+    display:flex;align-items:center;justify-content:center;
+    font-size:0.68rem; font-weight:bold; color:#fff;
+  }
+  .slot .remove-x{
+    position:absolute; top:-6px; right:-6px;
+    width:18px;height:18px;
+    background:var(--ember);
+    border-radius:50%;
+    font-size:0.7rem;
+    display:flex;align-items:center;justify-content:center;
+    color:#fff; opacity:0; transition:opacity 0.15s;
+  }
+  .slot.filled:hover .remove-x{ opacity:1; }
+  .slot.empty{ color:rgba(182,169,209,0.4); font-size:1.3rem; }
+
+  .deck-actions{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+    border-radius:8px;
+    padding:9px 16px;
+    font-size:0.85rem;
+    font-weight:bold;
+    transition: filter 0.15s, transform 0.1s;
+  }
+  button:hover{ filter:brightness(1.15); }
+  button:active{ transform: scale(0.97); }
+  .btn-primary{ background:linear-gradient(135deg, var(--gold), #b5871f); color:#241a05; }
+  .btn-ghost{ background:transparent; color:var(--ink-dim); border:1px solid rgba(182,169,209,0.35); }
+  .btn-ghost:hover{ color:var(--ink); border-color:var(--ink-dim); }
+
+  /* FILTER BAR */
+  .filter-bar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    background:var(--bg-panel);
+    border:1px solid rgba(124,77,255,0.25);
+    border-radius:14px;
+    padding:14px 16px;
+  }
+  .search-box{
+    flex:1;
+    min-width:180px;
+    display:flex;
+    align-items:center;
+    background:var(--bg-card);
+    border:1px solid rgba(182,169,209,0.25);
+    border-radius:8px;
+    padding:8px 12px;
+    gap:8px;
+  }
+  .search-box input{
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--ink);
+    font-size:0.9rem;
+    width:100%;
+    font-family:inherit;
+  }
+  .search-box input::placeholder{ color:var(--ink-dim); }
+  .chip-group{ display:flex; gap:6px; flex-wrap:wrap; }
+  .chip{
+    background:var(--bg-card);
+    border:1px solid rgba(182,169,209,0.25);
+    color:var(--ink-dim);
+    padding:7px 13px;
+    border-radius:999px;
+    font-size:0.78rem;
+    cursor:pointer;
+    user-select:none;
+    transition: all 0.15s;
+  }
+  .chip.active{
+    background:var(--violet);
+    color:#fff;
+    border-color:var(--violet);
+  }
+  .chip.active[data-rarity="rare"]{ background:var(--rare); border-color:var(--rare); color:#2b1300; }
+  .chip.active[data-rarity="epic"]{ background:var(--epic); border-color:var(--epic); color:#2a0033; }
+  .chip.active[data-rarity="legendary"]{ background:var(--legendary); border-color:var(--legendary); color:#012a24; }
+  .chip.active[data-rarity="champion"]{ background:var(--champion); border-color:var(--champion); color:#332400; }
+
+  /* CARD GRID */
+  .card-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap:14px;
+    padding-bottom:20px;
+  }
+  .card{
+    background:var(--bg-card);
+    border:1.5px solid rgba(182,169,209,0.2);
+    border-radius:12px;
+    padding:12px 10px 10px;
+    text-align:center;
+    cursor:pointer;
+    position:relative;
+    transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.15s;
+  }
+  .card:hover{ transform: translateY(-4px); border-color:var(--gold-dim); }
+  .card.selected{
+    border-color:var(--gold);
+    box-shadow:0 0 0 1px var(--gold), 0 8px 20px rgba(227,178,60,0.25);
+  }
+  .card.disabled{ opacity:0.35; cursor:not-allowed; }
+  .card.disabled:hover{ transform:none; }
+  .card-cost{
+    position:absolute; top:-8px; left:-8px;
+    width:26px;height:28px;
+    background:var(--violet);
+    clip-path: polygon(50% 0%, 90% 40%, 75% 100%, 25% 100%, 10% 40%);
+    display:flex;align-items:center;justify-content:center;
+    font-size:0.78rem; font-weight:bold; color:#fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.4);
+  }
+  .card-icon{
+    font-size:2rem;
+    margin-bottom:6px;
+    line-height:1;
+  }
+  .card-name{
+    font-size:0.78rem;
+    font-weight:bold;
+    color:var(--ink);
+    margin-bottom:6px;
+    min-height:2.1em;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .card-rarity{
+    display:inline-block;
+    font-size:0.6rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:2px 8px;
+    border-radius:999px;
+    font-weight:bold;
+  }
+  .rarity-common{ background:rgba(207,214,224,0.15); color:var(--common); }
+  .rarity-rare{ background:rgba(255,140,66,0.15); color:var(--rare); }
+  .rarity-epic{ background:rgba(200,107,255,0.15); color:var(--epic); }
+  .rarity-legendary{ background:rgba(94,230,208,0.15); color:var(--legendary); }
+  .rarity-champion{ background:rgba(255,212,71,0.15); color:var(--champion); }
+  .card-type{
+    font-size:0.62rem;
+    color:var(--ink-dim);
+    margin-top:4px;
+  }
+
+  .empty-state{
+    text-align:center;
+    padding:40px 20px;
+    color:var(--ink-dim);
+    font-style:italic;
+  }
+
+  .toast{
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--bg-panel);
+    border:1px solid var(--gold);
+    color:var(--ink);
+    padding:12px 22px;
+    border-radius:999px;
+    font-size:0.85rem;
+    opacity:0;
+    pointer-events:none;
+    transition: all 0.25s ease;
+    z-index:100;
+    box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  }
+  .toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+
+  @media (max-width:720px){
+    .deck-slots{ grid-template-columns: repeat(4, 1fr); }
+  }
+  @media (max-width:420px){
+    .card-grid{ grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 class="banner-font">⚔ ARENA DESTE KURUCU ⚔</h1>
+  <p>8 kart seç, iksir ortalamanı gör, destenıi tamamla</p>
+</header>
+
+<div class="layout">
+
+  <div class="deck-wrap">
+    <div class="deck-top">
+      <h2 class="banner-font">Destem <span id="deckCount">(0/8)</span></h2>
+      <div class="elixir-avg"><span class="drop"></span> <span id="avgElixir">0.0</span> Ort. İksir</div>
+    </div>
+    <div class="deck-slots" id="deckSlots"></div>
+    <div class="deck-actions">
+      <button class="btn-primary" id="randomBtn">🎲 Rastgele Deste</button>
+      <button class="btn-ghost" id="clearBtn">🗑 Destei Temizle</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="Kart ara...">
+    </div>
+    <div class="chip-group" id="typeChips">
+      <div class="chip active" data-type="all">Tümü</div>
+      <div class="chip" data-type="Birim">Birim</div>
+      <div class="chip" data-type="Büyü">Büyü</div>
+      <div class="chip" data-type="Bina">Bina</div>
+    </div>
+    <div class="chip-group" id="rarityChips">
+      <div class="chip" data-rarity="common">Sıradan</div>
+      <div class="chip" data-rarity="rare">Nadir</div>
+      <div class="chip" data-rarity="epic">Epik</div>
+      <div class="chip" data-rarity="legendary">Efsanevi</div>
+      <div class="chip" data-rarity="champion">Şampiyon</div>
+    </div>
+  </div>
+
+  <div class="card-grid" id="cardGrid"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- Veri: kartlar (isim, iksir maliyeti, tür, nadirlik, temsili ikon) ----
+const CARDS = [
+  {name:"Deve",cost:5,type:"Birim",rarity:"common",icon:"🐫"},
+  {name:"Şövalye",cost:3,type:"Birim",rarity:"common",icon:"🛡️"},
+  {name:"Arcikler",cost:3,type:"Birim",rarity:"common",icon:"🏹"},
+  {name:"Kılıç Ustası",cost:4,type:"Birim",rarity:"rare",icon:"⚔️"},
+  {name:"Domuz Binicisi",cost:4,type:"Birim",rarity:"rare",icon:"🐗"},
+  {name:"Balon",cost:5,type:"Birim",rarity:"epic",icon:"🎈"},
+  {name:"Ejderha Bebek",cost:4,type:"Birim",rarity:"epic",icon:"🐉"},
+  {name:"Buz Devi",cost:5,type:"Birim",rarity:"legendary",icon:"❄️"},
+  {name:"Madenci",cost:3,type:"Birim",rarity:"legendary",icon:"⛏️"},
+  {name:"Küçük Ejderhalar",cost:4,type:"Birim",rarity:"common",icon:"🐲"},
+  {name:"İskelet Ordusu",cost:3,type:"Birim",rarity:"epic",icon:"💀"},
+  {name:"Dev",cost:5,type:"Birim",rarity:"rare",icon:"👹"},
+  {name:"Balon Devi",cost:7,type:"Birim",rarity:"epic",icon:"🎈"},
+  {name:"Karanlık Prens",cost:4,type:"Birim",rarity:"legendary",icon:"🌑"},
+  {name:"Prenses",cost:3,type:"Birim",rarity:"legendary",icon:"🏹"},
+  {name:"Şampiyon Kalkan",cost:4,type:"Birim",rarity:"champion",icon:"🔰"},
+  {name:"Gulyabani Kral",cost:6,type:"Birim",rarity:"champion",icon:"👑"},
+  {name:"Roket",cost:6,type:"Büyü",rarity:"rare",icon:"🚀"},
+  {name:"Ateş Topu",cost:4,type:"Büyü",rarity:"rare",icon:"🔥"},
+  {name:"Yıldırım",cost:6,type:"Büyü",rarity:"epic",icon:"⚡"},
+  {name:"Zehir",cost:4,type:"Büyü",rarity:"epic",icon:"☠️"},
+  {name:"Dondurma",cost:4,type:"Büyü",rarity:"epic",icon:"🧊"},
+  {name:"Ok Yağmuru",cost:3,type:"Büyü",rarity:"common",icon:"🏹"},
+  {name:"Sihirbaz Ateşi",cost:2,type:"Büyü",rarity:"common",icon:"🔥"},
+  {name:"Deprem",cost:3,type:"Büyü",rarity:"epic",icon:"🌍"},
+  {name:"Top Kulesi",cost:4,type:"Bina",rarity:"common",icon:"🗼"},
+  {name:"Mörser",cost:4,type:"Bina",rarity:"common",icon:"💣"},
+  {name:"Ejderha Kulesi",cost:4,type:"Bina",rarity:"rare",icon:"🐲"},
+  {name:"İksir Değirmeni",cost:1,type:"Bina",rarity:"common",icon:"💧"},
+  {name:"Tesla Kulesi",cost:4,type:"Bina",rarity:"common",icon:"🗲"},
+  {name:"Mızrakçı Kulübesi",cost:2,type:"Bina",rarity:"common",icon:"🏹"},
+  {name:"İskelet Kulübesi",cost:3,type:"Bina",rarity:"common",icon:"💀"},
+  {name:"Şifa Fıçısı",cost:3,type:"Büyü",rarity:"rare",icon:"🍯"},
+  {name:"Klonlama",cost:3,type:"Büyü",rarity:"epic",icon:"👥"},
+  {name:"Aynalama",cost:1,type:"Büyü",rarity:"epic",icon:"🪞"},
+  {name:"Sağlam Kalkan",cost:3,type:"Birim",rarity:"rare",icon:"🛡️"},
+  {name:"Buz Büyücüsü",cost:3,type:"Birim",rarity:"legendary",icon:"🧙"},
+  {name:"Elektro Büyücü",cost:4,type:"Birim",rarity:"legendary",icon:"⚡"},
+  {name:"Ateş Ruhu",cost:1,type:"Birim",rarity:"common",icon:"🔥"},
+  {name:"Buz Ruhu",cost:1,type:"Birim",rarity:"common",icon:"❄️"},
+  {name:"Kement",cost:3,type:"Büyü",rarity:"legendary",icon:"🪢"},
+];
+
+const MAX_DECK = 8;
+let deck = []; // isimler dizisi
+let filters = { type:"all", rarity:null, search:"" };
+
+const cardGrid = document.getElementById('cardGrid');
+const deckSlots = document.getElementById('deckSlots');
+const deckCountEl = document.getElementById('deckCount');
+const avgElixirEl = document.getElementById('avgElixir');
+const toastEl = document.getElementById('toast');
+
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> toastEl.classList.remove('show'), 1800);
+}
+
+function toggleCard(name){
+  const idx = deck.indexOf(name);
+  if(idx > -1){
+    deck.splice(idx,1);
+  } else {
+    if(deck.length >= MAX_DECK){
+      showToast("Deste zaten dolu (8 kart)!");
+      return;
+    }
+    deck.push(name);
+  }
+  render();
+}
+
+function clearDeck(){
+  deck = [];
+  render();
+  showToast("Deste temizlendi");
+}
+
+function randomDeck(){
+  const shuffled = [...CARDS].sort(()=>Math.random()-0.5);
+  deck = shuffled.slice(0, MAX_DECK).map(c=>c.name);
+  render();
+  showToast("Rastgele deste oluşturuldu");
+}
+
+function matchesFilter(card){
+  if(filters.type !== "all" && card.type !== filters.type) return false;
+  if(filters.rarity && card.rarity !== filters.rarity) return false;
+  if(filters.search && !card.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
+  return true;
+}
+
+function renderCardGrid(){
+  const visible = CARDS.filter(matchesFilter);
+  if(visible.length === 0){
+    cardGrid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">Aramanla eşleşen kart bulunamadı 🔎</div>`;
+    return;
+  }
+  cardGrid.innerHTML = visible.map(card=>{
+    const selected = deck.includes(card.name);
+    const disabled = !selected && deck.length >= MAX_DECK;
+    return `
+      <div class="card ${selected ? 'selected':''} ${disabled ? 'disabled':''}" data-name="${card.name}">
+        <div class="card-cost">${card.cost}</div>
+        <div class="card-icon">${card.icon}</div>
+        <div class="card-name">${card.name}</div>
+        <div class="card-rarity rarity-${card.rarity}">${rarityLabel(card.rarity)}</div>
+        <div class="card-type">${card.type}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function rarityLabel(r){
+  return {common:"Sıradan", rare:"Nadir", epic:"Epik", legendary:"Efsanevi", champion:"Şampiyon"}[r] || r;
+}
+
+function renderDeckSlots(){
+  let html = "";
+  for(let i=0; i<MAX_DECK; i++){
+    const name = deck[i];
+    if(name){
+      const card = CARDS.find(c=>c.name===name);
+      html += `
+        <div class="slot filled" data-name="${name}" title="Çıkarmak için tıkla">
+          <div class="slot-cost">${card.cost}</div>
+          <div class="slot-icon">${card.icon}</div>
+          <div class="slot-name">${card.name}</div>
+          <div class="remove-x">✕</div>
+        </div>
+      `;
+    } else {
+      html += `<div class="slot empty">+</div>`;
+    }
+  }
+  deckSlots.innerHTML = html;
+}
+
+function updateStats(){
+  deckCountEl.textContent = `(${deck.length}/${MAX_DECK})`;
+  if(deck.length === 0){
+    avgElixirEl.textContent = "0.0";
+    return;
+  }
+  const total = deck.reduce((sum,name)=>{
+    const card = CARDS.find(c=>c.name===name);
+    return sum + (card ? card.cost : 0);
+  },0);
+  avgElixirEl.textContent = (total/deck.length).toFixed(1);
+}
+
+function render(){
+  renderCardGrid();
+  renderDeckSlots();
+  updateStats();
+}
+
+// Event delegation
+cardGrid.addEventListener('click', (e)=>{
+  const cardEl = e.target.closest('.card');
+  if(!cardEl || cardEl.classList.contains('disabled')) return;
+  toggleCard(cardEl.dataset.name);
+});
+
+deckSlots.addEventListener('click', (e)=>{
+  const slot = e.target.closest('.slot.filled');
+  if(!slot) return;
+  toggleCard(slot.dataset.name);
+});
+
+document.getElementById('clearBtn').addEventListener('click', clearDeck);
+document.getElementById('randomBtn').addEventListener('click', randomDeck);
+
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+  filters.search = e.target.value;
+  renderCardGrid();
+});
+
+document.getElementById('typeChips').addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  document.querySelectorAll('#typeChips .chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active');
+  filters.type = chip.dataset.type;
+  renderCardGrid();
+});
+
+document.getElementById('rarityChips').addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip');
+  if(!chip) return;
+  const isActive = chip.classList.contains('active');
+  document.querySelectorAll('#rarityChips .chip').forEach(c=>c.classList.remove('active'));
+  if(isActive){
+    filters.rarity = null;
+  } else {
+    chip.classList.add('active');
+    filters.rarity = chip.dataset.rarity;
+  }
+  renderCardGrid();
+});
+
+render();
+</script>
+
+</body>
+</html>
